@@ -21,7 +21,9 @@ players = []
 def control_center(request: Request):
     # templatesフォルダのadmin.htmlに、requestとplayersのデータを渡して描画
     return templates.TemplateResponse(
-        "admin.html", {"request": request, "players": players}
+        request=request,
+        name="admin.html",
+        context={"players": players}
     )
 
 # 🎮 ゲーム開始処理 (POST)
