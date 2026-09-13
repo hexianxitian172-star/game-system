@@ -1,11 +1,14 @@
 import os
 import random
+from datetime import datetime
+from zoneinfo import ZoneInfo
 import httpx
 import requests
 from dotenv import load_dotenv
 from fastapi import FastAPI, Form, Request
 from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
+from apscheduler.schedulers.asyncio import AsyncIOScheduler
 
 # .env ファイルからトークンを読み込む
 load_dotenv()
@@ -13,6 +16,14 @@ LINE_CHANNEL_ACCESS_TOKEN = os.getenv("LINE_CHANNEL_ACCESS_TOKEN", "YOUR_LINE_AC
 
 app = FastAPI()
 templates = Jinja2Templates(directory="templates")
+
+# スケジューラーの初期化（日本時間 Asia/Tokyo を設定）
+scheduler = AsyncIOScheduler(timezone="Asia/Tokyo")
+
+@app.on_event("startup")
+def start_scheduler():
+    if not scheduler.running:
+        scheduler.start()
 
 # --------------------------------------------------
 # 🌐 グローバル状態管理
@@ -57,6 +68,18 @@ async def send_line_push(user_id: str, text: str):
             await client.post(url, json=payload, headers=headers)
         except Exception as e:
             print(f"LINE送信エラー ({user_id}): {e}")
+
+async def scheduled_broadcast(text: str):
+    """予約時間になったらLINEへ一斉ブロードキャスト送信"""
+    if LINE_CHANNEL_ACCESS_TOKEN != "YOUR_LINE_ACCESS_TOKEN":
+        url = "https://api.line.me/v2/bot/message/broadcast"
+        headers = {
+            "Content-Type": "application/json",
+            "Authorization": f"Bearer {LINE_CHANNEL_ACCESS_TOKEN}"
+        }
+        payload = {"messages": [{"type": "text", "text": text}]}
+        async with httpx.AsyncClient() as client:
+            await client.post(url, json=payload, headers=headers)
 
 async def notify_all_players_roles():
     """全プレイヤーにそれぞれの本物の役職とチームをLINEで送信"""
@@ -147,7 +170,6 @@ async def start_game(
                     p["role"] = "逃走者"
                     p["team"] = team_label
 
-    # 車掌モード時、または運転士モードで「自動送信」が有効な場合は役職を自動送信
     if view_mode == "conductor" or driver_send_mode == "auto":
         await notify_all_players_roles()
 
@@ -188,13 +210,40 @@ def delete_player(player_name: str):
     return RedirectResponse(url="/admin", status_code=303)
 
 # --------------------------------------------------
-# 📢 案内＆日程管理 (POST)
+# 📢 案内・予約送信・日程管理 (POST)
 # --------------------------------------------------
 @app.post("/admin/add_announcement")
 def add_announcement(title: str = Form(...), text: str = Form(...)):
     global announcements
     new_id = max([a["id"] for a in announcements], default=0) + 1
     announcements.append({"id": new_id, "title": title, "text": text})
+    return RedirectResponse(url="/admin", status_code=303)
+
+@app.post("/admin/schedule_announcement")
+async def schedule_announcement(
+    title: str = Form(...),
+    text: str = Form(...),
+    run_at: str = Form(...) # HTMLの datetime-local (例: "2026-10-15T10:00")
+):
+    try:
+        # 日本時間 (JST) として日時解析
+        send_time = datetime.strptime(run_at, "%Y-%m-%dT%H:%M").replace(tzinfo=ZoneInfo("Asia/Tokyo"))
+        
+        # 指定時刻にタスクを登録
+        scheduler.add_job(
+            scheduled_broadcast,
+            'date',
+            run_date=send_time,
+            args=[text]
+        )
+        
+        # 管理画面用の一覧にも追加表示
+        new_id = max([a["id"] for a in announcements], default=0) + 1
+        formatted_time = send_time.strftime("%m/%d %H:%M")
+        announcements.append({"id": new_id, "title": f"⏰[{formatted_time} 予約] {title}", "text": text})
+    except Exception as e:
+        print(f"予約送信エラー: {e}")
+
     return RedirectResponse(url="/admin", status_code=303)
 
 @app.post("/admin/delete_announcement/{item_id}")

@@ -475,5 +475,30 @@
         </form>
       </div>
     {% endif %}
+    <!-- ⏱️ 日時指定の予約アナウンス送信フォーム -->
+<div style="margin-top: 20px; padding: 15px; background: rgba(255, 255, 255, 0.05); border-radius: 10px;">
+  <p style="font-weight: bold; margin-bottom: 10px; color: var(--neon-blue);">⏱️ メッセージ予約送信 (LINE一斉送信)</p>
+  
+  <form action="/admin/schedule_announcement" method="post" style="display: flex; flex-direction: column; gap: 10px;">
+    <div>
+      <label style="font-size: 12px; color: var(--muted);">タイトル</label>
+      <input type="text" name="title" placeholder="例: ミッション1発動" required style="width: 100%; padding: 8px; border-radius: 5px; border: 1px solid #444; background: #222; color: #fff;">
+    </div>
+
+    <div>
+      <label style="font-size: 12px; color: var(--muted);">送信日時</label>
+      <input type="datetime-local" name="run_at" required style="width: 100%; padding: 8px; border-radius: 5px; border: 1px solid #444; background: #222; color: #fff;">
+    </div>
+
+    <div>
+      <label style="font-size: 12px; color: var(--muted);">送信本文</label>
+      <textarea name="text" rows="3" placeholder="例: 10分以内に指定の駅へ移動せよ！" required style="width: 100%; padding: 8px; border-radius: 5px; border: 1px solid #444; background: #222; color: #fff;"></textarea>
+    </div>
+
+    <button type="submit" class="btn" style="background: var(--neon-blue); color: #000; font-weight: bold; margin-top: 5px;">
+      ⏰ この時間で送信予約する
+    </button>
+  </form>
+</div>
   </section>
 </div>
