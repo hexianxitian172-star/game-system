@@ -5,14 +5,13 @@
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <title>人狼逃走中 CONTROL CENTER</title>
   <style>
-    /* ===== Cyberpunk Dark UI (Upgraded) ===== */
+    /* ===== Cyberpunk Dark UI ===== */
     :root {
       --bg0: #04060a;
       --bg1: #070b14;
       --bg2: #0b1120;
 
       --panel: rgba(16, 21, 36, 0.78);
-      --panel2: rgba(255, 255, 255, 0.03);
       --border: rgba(255, 255, 255, 0.10);
       --border2: rgba(255, 255, 255, 0.16);
 
@@ -45,7 +44,6 @@
       min-height: 100vh;
     }
 
-    /* ===== Ambient scanlines / grid ===== */
     body::before {
       content: "";
       position: fixed;
@@ -62,18 +60,6 @@
       opacity: .25;
       mix-blend-mode: overlay;
     }
-    body::after {
-      content: "";
-      position: fixed;
-      inset: 0;
-      pointer-events: none;
-      background:
-        linear-gradient(to right, rgba(255, 255, 255, .04) 1px, transparent 1px),
-        linear-gradient(to bottom, rgba(255, 255, 255, .04) 1px, transparent 1px);
-      background-size: 60px 60px;
-      opacity: .08;
-      transform: translateZ(0);
-    }
 
     .wrap {
       max-width: 1180px;
@@ -82,7 +68,6 @@
       position: relative;
     }
 
-    /* ===== Title ===== */
     .title {
       display: flex;
       align-items: baseline;
@@ -103,10 +88,21 @@
       border-radius: 999px;
     }
 
-    /* ===== Layout ===== */
+    /* モード切替バー */
+    .mode-bar {
+      margin-bottom: 20px;
+      display: flex;
+      gap: 12px;
+      align-items: center;
+      background: var(--panel);
+      padding: 12px 18px;
+      border-radius: var(--radius);
+      border: 1px solid var(--border);
+    }
+
     .layout {
       display: grid;
-      grid-template-columns: 1fr 1.5fr;
+      grid-template-columns: 1fr 1.2fr;
       gap: 16px;
       align-items: start;
     }
@@ -114,7 +110,6 @@
       .layout { grid-template-columns: 1fr; }
     }
 
-    /* ===== Panel ===== */
     .panel {
       background: var(--panel);
       border: 1px solid var(--border);
@@ -123,20 +118,9 @@
       box-shadow: var(--shadow);
       position: relative;
       overflow: hidden;
+      margin-bottom: 16px;
     }
-    .panel::before {
-      content: "";
-      position: absolute;
-      inset: -2px;
-      background: radial-gradient(800px 240px at 10% 0%, rgba(45, 214, 255, .14), transparent 55%),
-                  radial-gradient(700px 220px at 90% 10%, rgba(255, 42, 79, .12), transparent 55%);
-      opacity: .9;
-      z-index: 0;
-      pointer-events: none;
-    }
-    .panel > * { position: relative; z-index: 1; }
 
-    /* ===== Section title ===== */
     .section-title {
       font-family: var(--mono);
       color: var(--muted);
@@ -152,14 +136,10 @@
     .section-title .right {
       color: rgba(233, 238, 252, .85);
       font-weight: 800;
-      letter-spacing: 0;
-      text-transform: none;
       font-size: 12px;
       font-family: var(--sans);
-      opacity: .95;
     }
 
-    /* ===== Forms ===== */
     .form-group { margin-bottom: 12px; }
     .form-group label {
       display: flex;
@@ -175,15 +155,13 @@
       font-family: var(--mono);
       font-size: 11px;
       color: rgba(168, 179, 214, .95);
-      opacity: .95;
       border: 1px solid rgba(255, 255, 255, .10);
       background: rgba(0, 0, 0, .18);
       padding: 2px 8px;
       border-radius: 999px;
-      white-space: nowrap;
     }
 
-    .form-group input {
+    .form-group input, .form-group textarea {
       width: 100%;
       padding: 11px 12px;
       background: rgba(0, 0, 0, 0.28);
@@ -191,52 +169,34 @@
       color: white;
       border-radius: 12px;
       outline: none;
-      transition: .2s ease;
       font-size: 14px;
     }
-    .form-group input:focus {
-      border-color: rgba(45, 214, 255, .45);
-      box-shadow: 0 0 0 4px rgba(45, 214, 255, .14);
-      background: rgba(0, 0, 0, 0.36);
-    }
 
-    /* ===== Buttons ===== */
-    .actions {
-      display: grid;
-      gap: 10px;
-      margin-top: 14px;
-    }
+    .actions { display: grid; gap: 10px; margin-top: 14px; }
     .btn {
       appearance: none;
       border: 1px solid var(--border);
-      background: rgba(255, 255, 255, 0.04);
+      background: rgba(255, 255, 255, 0.06);
       color: white;
-      border-radius: 14px;
-      padding: 12px 14px;
-      font-weight: 900;
+      border-radius: 12px;
+      padding: 10px 14px;
+      font-weight: 800;
       cursor: pointer;
-      display: flex;
+      display: inline-flex;
       align-items: center;
       justify-content: center;
-      gap: 10px;
-      transition: transform .08s ease, filter .15s ease, border-color .15s ease;
-      user-select: none;
-      position: relative;
-      overflow: hidden;
+      gap: 8px;
+      transition: .15s ease;
+      font-size: 13px;
     }
-    .btn::after {
-      content: "";
-      position: absolute;
-      inset: -2px;
-      background: linear-gradient(120deg, transparent 25%, rgba(255, 255, 255, .26), transparent 55%);
-      transform: translateX(-140%);
-      transition: transform .55s ease;
-      pointer-events: none;
-      opacity: .55;
+    .btn:hover { filter: brightness(1.15); }
+
+    .btn-mode-active {
+      background: var(--neon-blue);
+      color: #000;
+      font-weight: 900;
+      border-color: var(--neon-blue);
     }
-    .btn:hover::after { transform: translateX(140%); }
-    .btn:hover { filter: brightness(1.06); border-color: rgba(255, 255, 255, .22); }
-    .btn:active { transform: scale(.99); }
 
     .btn-start {
       border-color: rgba(45, 214, 255, 0.40);
@@ -249,7 +209,6 @@
       background: linear-gradient(135deg, rgba(255, 42, 79, .12), rgba(0, 0, 0, .10));
     }
 
-    /* ===== Roster cards ===== */
     .cards {
       display: grid;
       grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -264,19 +223,6 @@
       border: 1px solid rgba(255, 255, 255, 0.11);
       background: linear-gradient(180deg, rgba(255, 255, 255, 0.04), rgba(255, 255, 255, 0.02));
       padding: 12px;
-      position: relative;
-      overflow: hidden;
-    }
-    .card::before {
-      content: "";
-      position: absolute;
-      inset: -40px -40px auto auto;
-      width: 120px;
-      height: 120px;
-      background: radial-gradient(circle at center, rgba(45, 214, 255, .20), transparent 60%);
-      opacity: .6;
-      pointer-events: none;
-      transform: rotate(20deg);
     }
 
     .card-top {
@@ -287,46 +233,20 @@
       margin-bottom: 8px;
     }
 
-    .player-name {
-      font-weight: 950;
-      letter-spacing: .2px;
-      font-size: 14px;
-      line-height: 1.2;
-    }
+    .player-name { font-weight: 950; font-size: 14px; }
 
     .badge {
-      padding: 5px 9px;
+      padding: 4px 8px;
       border-radius: 999px;
       font-size: 11px;
       font-family: var(--mono);
       border: 1px solid rgba(255, 255, 255, 0.14);
       white-space: nowrap;
-      height: fit-content;
-      background: rgba(0, 0, 0, .16);
     }
-    .badge-oni {
-      color: var(--neon-red);
-      border-color: rgba(255, 42, 79, .45);
-      background: rgba(255, 42, 79, .10);
-      box-shadow: 0 0 20px rgba(255, 42, 79, .12);
-    }
-    .badge-wolf {
-      color: var(--neon-warning);
-      border-color: rgba(255, 170, 0, .45);
-      background: rgba(255, 170, 0, .10);
-      box-shadow: 0 0 20px rgba(255, 170, 0, .10);
-    }
-    .badge-evader {
-      color: var(--neon-blue);
-      border-color: rgba(45, 214, 255, .45);
-      background: rgba(45, 214, 255, .10);
-      box-shadow: 0 0 20px rgba(45, 214, 255, .10);
-    }
-    .badge-unassigned {
-      color: var(--neon-gray);
-      border-color: rgba(123, 134, 179, .35);
-      background: rgba(123, 134, 179, .08);
-    }
+    .badge-oni { color: var(--neon-red); border-color: rgba(255, 42, 79, .45); background: rgba(255, 42, 79, .10); }
+    .badge-wolf { color: var(--neon-warning); border-color: rgba(255, 170, 0, .45); background: rgba(255, 170, 0, .10); }
+    .badge-evader { color: var(--neon-blue); border-color: rgba(45, 214, 255, .45); background: rgba(45, 214, 255, .10); }
+    .badge-unassigned { color: var(--neon-gray); border-color: rgba(123, 134, 179, .35); background: rgba(123, 134, 179, .08); }
 
     .team-row {
       display: flex;
@@ -339,124 +259,198 @@
       font-size: 11px;
       color: var(--muted);
       background: rgba(0, 0, 0, 0.18);
-      padding: 4px 8px;
-      border-radius: 10px;
-      border: 1px solid rgba(255, 255, 255, .09);
+      padding: 3px 6px;
+      border-radius: 6px;
       font-family: var(--mono);
     }
-    .status-dot {
-      width: 10px;
-      height: 10px;
-      border-radius: 50%;
-      border: 1px solid rgba(255, 255, 255, .18);
-      background: rgba(255, 255, 255, .05);
-      box-shadow: 0 0 0 3px rgba(255, 255, 255, .04);
-    }
-
-    /* Empty state */
     .empty {
-      padding: 18px 12px;
+      padding: 18px;
       border-radius: 14px;
       border: 1px dashed rgba(255, 255, 255, .18);
-      background: rgba(255, 255, 255, .02);
       color: var(--muted);
       font-size: 14px;
       text-align: center;
+      grid-column: 1 / -1;
     }
   </style>
 </head>
 
 <body>
   <div class="wrap">
-    <h1 class="title">
-      人狼逃走中 <span>CONTROL CENTER</span>
-    </h1>
+    <h1 class="title">人狼逃走中 <span>CONTROL CENTER</span></h1>
+
+    <!-- 車掌/運転士モード切替 -->
+    <div class="mode-bar">
+      <span style="font-size: 13px; font-weight: bold; color: var(--muted);">表示モード:</span>
+      <form action="/admin/set_mode" method="post" style="display: inline;">
+        <input type="hidden" name="mode" value="conductor">
+        <button type="submit" class="btn {% if view_mode == 'conductor' %}btn-mode-active{% endif %}">
+          🚃 車掌モード (全データ開示)
+        </button>
+      </form>
+      
+      <form action="/admin/set_mode" method="post" style="display: inline;">
+        <input type="hidden" name="mode" value="driver">
+        <button type="submit" class="btn {% if view_mode == 'driver' %}btn-mode-active{% endif %}">
+          👨‍✈️ 運転士モード (人狼秘匿)
+        </button>
+      </form>
+    </div>
 
     <div class="layout">
-      <!-- 左側：コントロールパネル -->
-      <section class="panel">
-        <p class="section-title">
-          <span>⚙️ Game Settings</span>
-          <span class="right">Admin / Role Distribution</span>
-        </p>
+      <!-- 左エリア：設定 / 連絡メッセージ / 日程 -->
+      <div>
+        <!-- ゲーム設定 -->
+        <section class="panel">
+          <p class="section-title">
+            <span>⚙️ Game Settings</span>
+            <span class="right">Admin / Role Distribution</span>
+          </p>
 
-        <form action="/admin/start" method="post">
-          <div class="form-group">
-            <label>
-              <span>👹 鬼の人数</span>
-              <span class="help">MIN 1</span>
-            </label>
-            <input type="number" name="oni_count" value="2" min="1" required />
-          </div>
+          <form action="/admin/start" method="post">
+            <div class="form-group">
+              <label>
+                <span>👹 鬼の人数</span>
+                <span class="help">MIN 1</span>
+              </label>
+              <input type="number" name="oni_count" value="2" min="1" required />
+            </div>
 
-          <div class="form-group">
-            <label>
-              <span>👥 チーム人数構成 (カンマ区切り)</span>
-              <span class="help">例: 3,3 or 4,4,4</span>
-            </label>
-            <input type="text" name="camp_sizes" value="3,3" placeholder="例: 3,3 や 4,4,4" required />
-          </div>
-          <div class="form-group">
-  <label style="cursor: pointer; display: flex; align-items: center; justify-content: space-between;">
-    <span>🐺 人狼役を無効化（通常逃走中モード）</span>
-    <input type="checkbox" name="disable_wolf" value="true" style="width: 20px; height: 20px; cursor: pointer;">
-  </label>
-</div>
+            <div class="form-group">
+              <label>
+                <span>👥 チーム人数構成 (カンマ区切り)</span>
+                <span class="help">例: 3,3</span>
+              </label>
+              <input type="text" name="camp_sizes" value="3,3" placeholder="例: 3,3 や 4,4,4" required />
+            </div>
 
-          <div class="actions">
-            <button class="btn btn-start" type="submit">
-              🚀 ゲーム開始（役職自動割り振り）
+            <div class="form-group">
+              <label style="cursor: pointer; display: flex; align-items: center; justify-content: space-between;">
+                <span>🐺 人狼役を無効化（通常逃走中）</span>
+                <input type="checkbox" name="disable_wolf" value="true" style="width: 18px; height: 18px; cursor: pointer;">
+              </label>
+            </div>
+
+            <div class="actions">
+              <button class="btn btn-start" type="submit">
+                🚀 ゲーム開始（役職自動割り振り）
+              </button>
+            </div>
+          </form>
+
+          <div style="height: 12px;"></div>
+
+          <form action="/admin/reset" method="post">
+            <button class="btn btn-reset" type="submit" style="width: 100%;" onclick="return confirm('全員をリストから削除します。よろしいですか？');">
+              ⟲ 参加者リストを全リセット（危険）
             </button>
-            
-          </div>
-        </form>
+          </form>
+        </section>
 
-        <div style="height: 10px;"></div>
+        <!-- メニュー連絡・定型文管理（複数登録対応） -->
+        <section class="panel">
+          <p class="section-title"><span>📢 公式LINE案内管理 (複数登録可能)</span></p>
 
-        <form action="/admin/reset" method="post">
-          <button
-            class="btn btn-reset"
-            type="submit"
-            onclick="return confirm('全員をリストから削除します。よろしいですか？');"
-          >
-            ⟲ 参加者リストを全リセット（危険）
-          </button>
-        </form>
-      </section>
+          <form action="/admin/add_announcement" method="post" style="margin-bottom: 16px; background: rgba(0,0,0,0.2); padding: 12px; border-radius: 10px;">
+            <p style="font-weight: bold; margin: 0 0 8px 0; font-size: 13px;">➕ メッセージ追加</p>
+            <input type="text" name="title" placeholder="タイトル (例: ミッション1開始)" required style="margin-bottom: 8px;" />
+            <textarea name="text" rows="3" placeholder="送信本文..." required style="margin-bottom: 8px;"></textarea>
+            <button type="submit" class="btn" style="width: 100%;">💾 テンプレート保存</button>
+          </form>
 
-      <!-- 右側：プレイヤーリスト -->
-      <section class="panel">
-        <p class="section-title">
-          <span>🧾 Participant Roster</span>
-          <span class="right">現在 {{ players | length }} 名</span>
-        </p>
-
-        <div class="cards">
-          {% if players %}
-            {% for p in players %}
-              <div class="card">
-                <div class="card-top">
-                  <span class="player-name">{{ p.name }}</span>
-
-                  <span class="badge {% if p.role == '鬼' %}badge-oni{% elif p.role == '人狼' %}badge-wolf{% elif p.role == '逃走者' %}badge-evader{% else %}badge-unassigned{% endif %}">
-                    {{ p.role }}
-                  </span>
+          <p style="font-weight: bold; margin-bottom: 8px; font-size: 13px;">📑 保存済み一覧</p>
+          {% if announcements %}
+            {% for item in announcements %}
+              <div style="border: 1px solid var(--border); border-radius: 8px; padding: 10px; margin-bottom: 8px; background: rgba(255,255,255,0.02);">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                  <strong style="font-size: 13px; color: var(--neon-blue);">📌 {{ item.title }}</strong>
+                  <form action="/admin/delete_announcement/{{ item.id }}" method="post" style="display: inline;" onsubmit="return confirm('削除しますか？');">
+                    <button type="submit" style="background: none; border: none; color: var(--neon-red); cursor: pointer; font-size: 11px;">❌ 削除</button>
+                  </form>
                 </div>
-
-                <div class="team-row">
-                  <span class="team-tag">TEAM: {{ p.team }}</span>
-                  <span class="status-dot" title="Status"></span>
-                </div>
+                <p style="white-space: pre-wrap; font-size: 12px; color: var(--muted); margin: 0 0 8px 0; background: rgba(0,0,0,0.3); padding: 6px; border-radius: 4px;">{{ item.text }}</p>
+                <form action="/admin/send_announcement/{{ item.id }}" method="post" onsubmit="return confirm('LINE送信しますか？');">
+                  <button type="submit" class="btn" style="background-color: #06C755; color: white; width: 100%; border: none;">💬 LINE送信</button>
+                </form>
               </div>
             {% endfor %}
           {% else %}
-            <div class="empty">
-              参加者はまだいません。<br/>
-              ✅ 左の設定から開始してください
-            </div>
+            <p style="color: var(--muted); font-size: 12px;">保存されたメッセージはありません。</p>
           {% endif %}
-        </div>
-      </section>
+        </section>
+
+        <!-- 日程管理機能 (安全なJinja2参照) -->
+        <section class="panel">
+          <p class="section-title"><span>📅 ゲーム日程管理</span></p>
+          <form action="/admin/update_schedule" method="post">
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;" class="form-group">
+              <div>
+                <label>開催日</label>
+                <input type="date" name="date" value="{{ game_schedule.date if game_schedule and game_schedule.date else '' }}" required />
+              </div>
+              <div>
+                <label>開催場所/路線</label>
+                <input type="text" name="location" value="{{ game_schedule.location if game_schedule and game_schedule.location else '' }}" required />
+              </div>
+              <div>
+                <label>開始時間</label>
+                <input type="time" name="start_time" value="{{ game_schedule.start_time if game_schedule and game_schedule.start_time else '' }}" required />
+              </div>
+              <div>
+                <label>終了時間</label>
+                <input type="time" name="end_time" value="{{ game_schedule.end_time if game_schedule and game_schedule.end_time else '' }}" required />
+              </div>
+            </div>
+            <button type="submit" class="btn" style="width: 100%; margin-top: 6px;">💾 日程情報を更新</button>
+          </form>
+        </section>
+      </div>
+
+      <!-- 右エリア：参加者カード一覧 -->
+      <div>
+        <section class="panel">
+          <p class="section-title">
+            <span>🧾 Participant Roster</span>
+            <span class="right">現在 {{ players | length if players else 0 }} 名</span>
+          </p>
+
+          <div class="cards">
+            {% if players %}
+              {% for p in players %}
+                <div class="card">
+                  <div class="card-top">
+                    <span class="player-name">{{ p.name }}</span>
+
+                    <!-- 運転士モード時は人狼を「逃走者」と表示 -->
+                    {% if view_mode == 'driver' and p.role == '人狼' %}
+                      <span class="badge badge-evader">逃走者</span>
+                    {% else %}
+                      <span class="badge {% if p.role == '鬼' %}badge-oni{% elif p.role == '人狼' %}badge-wolf{% elif p.role == '逃走者' %}badge-evader{% else %}badge-unassigned{% endif %}">
+                        {{ p.role }}
+                      </span>
+                    {% endif %}
+                  </div>
+
+                  <div class="team-row">
+                    <span class="team-tag">TEAM: {{ p.team }}</span>
+
+                    <form action="/admin/delete_player/{{ p.name }}" method="post" style="display:inline;" onsubmit="return confirm('{{ p.name }} さんを削除してもよろしいですか？');">
+                      <button type="submit" style="background: none; border: none; color: var(--neon-red); cursor: pointer; font-size: 11px; font-weight: bold;">
+                        ❌ 削除
+                      </button>
+                    </form>
+                  </div>
+                </div>
+              {% endfor %}
+            {% else %}
+              <div class="empty">
+                参加者はまだいません。<br/>
+                ✅ 左の設定から開始してください
+              </div>
+            {% endif %}
+          </div>
+        </section>
+      </div>
     </div>
   </div>
 </body>
