@@ -17,8 +17,9 @@ templates = Jinja2Templates(directory="templates")
 # --------------------------------------------------
 # 🌐 グローバル状態管理
 # --------------------------------------------------
-view_mode = "conductor"  # "conductor" (車掌モード) または "driver" (運転士モード)
-players = []             # 参加者データリスト
+view_mode = "conductor"        # "conductor" (車掌モード) または "driver" (運転士モード)
+driver_send_mode = "manual"    # 運転士モード時の送信モード: "auto" (自動) または "manual" (手動)
+players = []                   # 参加者データリスト
 
 # 案内メッセージテンプレート
 announcements = [
@@ -35,6 +36,43 @@ game_schedule = {
 }
 
 # --------------------------------------------------
+# 📩 LINE プッシュメッセージ送信処理
+# --------------------------------------------------
+async def send_line_push(user_id: str, text: str):
+    """個別のLINEユーザーへメッセージを送信する(Push Message)"""
+    if not user_id or LINE_CHANNEL_ACCESS_TOKEN == "YOUR_LINE_ACCESS_TOKEN":
+        return
+    
+    url = "https://api.line.me/v2/bot/message/push"
+    headers = {
+        "Content-Type": "application/json",
+        "Authorization": f"Bearer {LINE_CHANNEL_ACCESS_TOKEN}"
+    }
+    payload = {
+        "to": user_id,
+        "messages": [{"type": "text", "text": text}]
+    }
+    async with httpx.AsyncClient() as client:
+        try:
+            await client.post(url, json=payload, headers=headers)
+        except Exception as e:
+            print(f"LINE送信エラー ({user_id}): {e}")
+
+async def notify_all_players_roles():
+    """全プレイヤーにそれぞれの本物の役職とチームをLINEで送信"""
+    for p in players:
+        user_id = p.get("user_id")
+        if user_id:
+            msg = (
+                f"🚨【役職通知】\n"
+                f"{p['name']} さん、あなたの役職が決定しました！\n\n"
+                f"■ 役職: {p.get('role', '未割り当て')}\n"
+                f"■ チーム: {p.get('team', '未設定')}\n\n"
+                f"※他のプレイヤーに自分の役職を知られないよう注意してください。"
+            )
+            await send_line_push(user_id, msg)
+
+# --------------------------------------------------
 # 🖥️ 管理画面表示 (GET)
 # --------------------------------------------------
 @app.get("/admin", response_class=HTMLResponse)
@@ -46,13 +84,13 @@ def get_admin(request: Request):
             p_copy["role"] = "逃走者"
         display_players.append(p_copy)
 
-    # 引数名を明示して呼び出すことでエラーを回避
     return templates.TemplateResponse(
         request=request,
         name="admin.html",
         context={
             "players": display_players,
             "view_mode": view_mode,
+            "driver_send_mode": driver_send_mode,
             "announcements": announcements,
             "game_schedule": game_schedule
         }
@@ -62,7 +100,7 @@ def get_admin(request: Request):
 # 🎮 ゲーム開始処理 (POST)
 # --------------------------------------------------
 @app.post("/admin/start")
-def start_game(
+async def start_game(
     oni_count: int = Form(2),
     camp_sizes: str = Form("3,3"),
     disable_wolf: bool = Form(False)
@@ -109,15 +147,32 @@ def start_game(
                     p["role"] = "逃走者"
                     p["team"] = team_label
 
+    # 車掌モード時、または運転士モードで「自動送信」が有効な場合は役職を自動送信
+    if view_mode == "conductor" or driver_send_mode == "auto":
+        await notify_all_players_roles()
+
     return RedirectResponse(url="/admin", status_code=303)
 
 # --------------------------------------------------
-# 🎛️ モード・プレイヤー管理 (POST)
+# 🎛️ モード・送信設定・役職一斉送信 (POST)
 # --------------------------------------------------
 @app.post("/admin/set_mode")
 def set_mode(mode: str = Form(...)):
     global view_mode
     view_mode = mode
+    return RedirectResponse(url="/admin", status_code=303)
+
+@app.post("/admin/set_driver_send_mode")
+def set_driver_send_mode(send_mode: str = Form(...)):
+    """運転士モード時の送信モード切替 (auto / manual)"""
+    global driver_send_mode
+    driver_send_mode = send_mode
+    return RedirectResponse(url="/admin", status_code=303)
+
+@app.post("/admin/send_roles")
+async def send_roles():
+    """ボタン押下時：全員に個別のLINEで役職を一斉送信"""
+    await notify_all_players_roles()
     return RedirectResponse(url="/admin", status_code=303)
 
 @app.post("/admin/reset_players")

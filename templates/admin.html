@@ -406,52 +406,74 @@
         </section>
       </div>
 
-      <!-- 右エリア：参加者カード一覧 -->
-      <div>
-        <section class="panel">
-          <p class="section-title">
-            <span>🧾 Participant Roster</span>
-            <span class="right">現在 {{ players | length if players else 0 }} 名</span>
-          </p>
+ <!-- 右エリア：参加者カード一覧 & 通知設定 -->
+<div>
+  <!-- 参加者リストパネル -->
+  <section class="panel">
+    <p class="section-title">
+      <span>🧾 Participant Roster</span>
+      <span class="right">現在 {{ players | length if players else 0 }} 名</span>
+    </p>
 
-          <div class="cards">
-            {% if players %}
-              {% for p in players %}
-                <div class="card">
-                  <div class="card-top">
-                    <span class="player-name">{{ p.name }}</span>
+    <div class="cards">
+      {% if players %}
+        {% for p in players %}
+          <div class="card">
+            <div class="card-top">
+              <span class="player-name">{{ p.name }}</span>
 
-                    <!-- 運転士モード時は人狼を「逃走者」と表示 -->
-                    {% if view_mode == 'driver' and p.role == '人狼' %}
-                      <span class="badge badge-evader">逃走者</span>
-                    {% else %}
-                      <span class="badge {% if p.role == '鬼' %}badge-oni{% elif p.role == '人狼' %}badge-wolf{% elif p.role == '逃走者' %}badge-evader{% else %}badge-unassigned{% endif %}">
-                        {{ p.role }}
-                      </span>
-                    {% endif %}
-                  </div>
+              <!-- 運転士モード時は人狼を「逃走者」と表示 -->
+              {% if view_mode == 'driver' and p.role == '人狼' %}
+                <span class="badge badge-evader">逃走者</span>
+              {% else %}
+                <span class="badge {% if p.role == '鬼' %}badge-oni{% elif p.role == '人狼' %}badge-wolf{% elif p.role == '逃走者' %}badge-evader{% else %}badge-unassigned{% endif %}">
+                  {{ p.role }}
+                </span>
+              {% endif %}
+            </div>
 
-                  <div class="team-row">
-                    <span class="team-tag">TEAM: {{ p.team }}</span>
+            <div class="team-row">
+              <span class="team-tag">TEAM: {{ p.team }}</span>
 
-                    <form action="/admin/delete_player/{{ p.name }}" method="post" style="display:inline;" onsubmit="return confirm('{{ p.name }} さんを削除してもよろしいですか？');">
-                      <button type="submit" style="background: none; border: none; color: var(--neon-red); cursor: pointer; font-size: 11px; font-weight: bold;">
-                        ❌ 削除
-                      </button>
-                    </form>
-                  </div>
-                </div>
-              {% endfor %}
-            {% else %}
-              <div class="empty">
-                参加者はまだいません。<br/>
-                ✅ 左の設定から開始してください
-              </div>
-            {% endif %}
+              <form action="/admin/delete_player/{{ p.name | urlencode }}" method="post" style="display:inline;" onsubmit="return confirm('{{ p.name }} さんを削除してもよろしいですか？');">
+                <button type="submit" style="background: none; border: none; color: var(--neon-red); cursor: pointer; font-size: 11px; font-weight: bold;">
+                  ❌ 削除
+                </button>
+              </form>
+            </div>
           </div>
-        </section>
-      </div>
+        {% endfor %}
+      {% else %}
+        <div class="empty">
+          参加者はまだいません。<br/>
+          ✅ 左の設定から開始してください
+        </div>
+      {% endif %}
     </div>
-  </div>
-</body>
-</html>
+  </section>
+
+  <!-- 役職送信・運転士設定パネル -->
+  <section class="panel" style="margin-top: 16px;">
+    <!-- 役職一斉送信ボタン（手動用） -->
+    <form action="/admin/send_roles" method="post" onsubmit="return confirm('参加者全員に役職通知をLINE送信しますか？');">
+      <button type="submit" class="btn" {% if not players %}disabled style="opacity: 0.5; cursor: not-allowed; width: 100%;"{% else %}style="background: var(--neon-blue); color: #000; font-weight: bold; width: 100%;"{% endif %}>
+        📩 全員に役職をLINE通知する
+      </button>
+    </form>
+
+    <!-- 運転士モード時の自動/手動切り替えスイッチ -->
+    {% if view_mode == 'driver' %}
+      <div style="margin-top: 12px; padding: 10px; background: rgba(0,0,0,0.3); border-radius: 10px;">
+        <p style="font-size: 12px; margin: 0 0 8px 0; color: var(--muted);">👨‍✈️ 運転士モード時：役職通知タイミング設定</p>
+        <form action="/admin/set_driver_send_mode" method="post" style="display: flex; gap: 8px;">
+          <button type="submit" name="send_mode" value="auto" class="btn {% if driver_send_mode == 'auto' %}btn-mode-active{% endif %}" style="flex: 1;">
+            ⚡ 開始時に自動送信
+          </button>
+          <button type="submit" name="send_mode" value="manual" class="btn {% if driver_send_mode == 'manual' %}btn-mode-active{% endif %}" style="flex: 1;">
+            🛑 手動送信（任意タイミング）
+          </button>
+        </form>
+      </div>
+    {% endif %}
+  </section>
+</div>
