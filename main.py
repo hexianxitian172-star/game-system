@@ -70,13 +70,22 @@ def start_game(
 
     return RedirectResponse(url="/admin", status_code=303)
 
-# 🔄 参加者リセット処理 (POST)
-@app.post("/admin/reset")
-def admin_reset():
+
+
+# 🗑️ 参加者全員リセット処理
+@app.post("/admin/reset_players")
+def reset_players():
     global players
-    players.clear() # リストを完全に空にする
+    players = []  # 参加者リストを空にする
     return RedirectResponse(url="/admin", status_code=303)
 
+
+# ❌ 参加者の個別削除処理（必要な場合）
+@app.post("/admin/delete_player/{player_name}")
+def delete_player(player_name: str):
+    global players
+    players = [p for p in players if p.get("name") != player_name]
+    return RedirectResponse(url="/admin", status_code=303)
 
 # --- 🤖 LINE Webhook 機能 ---
 @app.post("/webhook")
