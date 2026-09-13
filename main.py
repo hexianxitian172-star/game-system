@@ -84,6 +84,31 @@ def get_admin(request: Request):
     )
 
 # --------------------------------------------------
+# 🖥️ 管理画面表示 (GET)
+# --------------------------------------------------
+@app.get("/admin", response_class=HTMLResponse)
+def get_admin(request: Request):
+    display_players = []
+    for p in players:
+        p_copy = dict(p)
+        if view_mode == "driver" and p_copy.get("role") == "人狼":
+            p_copy["role"] = "逃走者"
+        display_players.append(p_copy)
+
+    # context= を明示し、その中に request やデータをまとめる形式
+    return templates.TemplateResponse(
+        "admin.html",
+        context={
+            "request": request,
+            "players": display_players,
+            "view_mode": view_mode,
+            "announcements": announcements,
+            "game_schedule": game_schedule
+        }
+    )
+
+
+# --------------------------------------------------
 # 🎮 ゲーム開始処理 (POST)
 # --------------------------------------------------
 @app.post("/admin/start")
