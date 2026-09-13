@@ -28,7 +28,11 @@ def control_center(request: Request):
 
 # 🎮 ゲーム開始処理 (POST)
 @app.post("/admin/start")
-def start_game(oni_count: int = Form(2), camp_sizes: str = Form("3,3")):
+def start_game(
+    oni_count: int = Form(2),
+    camp_sizes: str = Form("3,3"),
+    disable_wolf: bool = Form(False)  # ★人狼無効化フラグを受け取る
+):
     global players
     sizes = [int(s.strip()) for s in camp_sizes.split(",")]
 
@@ -49,13 +53,20 @@ def start_game(oni_count: int = Form(2), camp_sizes: str = Form("3,3")):
         remaining = remaining[size:]
 
         if team_members:
-            werewolf = team_members.pop(0)
-            werewolf["role"] = "人狼"
-            werewolf["team"] = f"{team_names[i]}チーム"
+            if disable_wolf:
+                # ★人狼OFF：チーム全員を「逃走者」にする
+                for p in team_members:
+                    p["role"] = "逃走者"
+                    p["team"] = f"{team_names[i]}チーム"
+            else:
+                # ★人狼ON：先頭の1人を「人狼」、残りを「逃走者」にする
+                werewolf = team_members.pop(0)
+                werewolf["role"] = "人狼"
+                werewolf["team"] = f"{team_names[i]}チーム"
 
-            for p in team_members:
-                p["role"] = "逃走者"
-                p["team"] = f"{team_names[i]}チーム"
+                for p in team_members:
+                    p["role"] = "逃走者"
+                    p["team"] = f"{team_names[i]}チーム"
 
     return RedirectResponse(url="/admin", status_code=303)
 
