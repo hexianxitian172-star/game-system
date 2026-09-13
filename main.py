@@ -16,50 +16,81 @@ templates = Jinja2Templates(directory="templates")
 # 参加者を保持するリスト
 players = []
 
-# --- 🖥️ 管理画面機能 ---
+import os
+import random  # ★ファイルの最上部でまとめてインポート
+import requests
+from fastapi import FastAPI, Form, Request
+from fastapi.responses import HTMLResponse, RedirectResponse
+from fastapi.templating import Jinja2Templates
+
+app = FastAPI()
+templates = Jinja2Templates(directory="templates")
+
+# --------------------------------------------------
+# 🖥️ 管理画面表示 (GET)
+# --------------------------------------------------
 @app.get("/admin", response_class=HTMLResponse)
-def control_center(request: Request):
-    # templatesフォルダのadmin.htmlに、requestとplayersのデータを渡して描画
+def get_admin(request: Request):
+    display_players = []
+    for p in players:
+        p_copy = dict(p)
+        if view_mode == "driver" and p_copy.get("role") == "人狼":
+            p_copy["role"] = "逃走者"
+        display_players.append(p_copy)
+
     return templates.TemplateResponse(
         request=request,
         name="admin.html",
-        context={"players": players}
+        context={
+            "players": display_players,
+            "view_mode": view_mode,
+            "announcements": announcements,
+            "game_schedule": game_schedule
+        }
     )
 
+# --------------------------------------------------
 # 🎮 ゲーム開始処理 (POST)
+# --------------------------------------------------
 @app.post("/admin/start")
 def start_game(
     oni_count: int = Form(2),
     camp_sizes: str = Form("3,3"),
-    disable_wolf: bool = Form(False)  # ★人狼無効化フラグを受け取る
+    disable_wolf: bool = Form(False)
 ):
     global players
-    sizes = [int(s.strip()) for s in camp_sizes.split(",")]
+    if not players:
+        return RedirectResponse(url="/admin", status_code=303)
 
-    random.shuffle(players) # プレイヤー順をランダム化
+    # 1. 全員のステータス初期化＆順番をランダム化
+    for p in players:
+        p["status"] = "逃走中"
+    random.shuffle(players)
 
-    # 1. 鬼の割り当て
+    # 2. 鬼の割り当て
     for p in players[:oni_count]:
         p["role"] = "鬼"
         p["team"] = "鬼"
 
-    # 2. 逃走者チーム＆人狼の割り当て
+    # 3. 逃走者チーム＆人狼の割り当て
     remaining = players[oni_count:]
+    sizes = [int(s.strip()) for s in camp_sizes.split(",") if s.strip().isdigit()]
     team_names = ["A", "B", "C", "D"]
 
     for i, size in enumerate(sizes):
-        if i >= len(team_names): break
+        if i >= len(team_names):
+            break
         team_members = remaining[:size]
         remaining = remaining[size:]
 
         if team_members:
             if disable_wolf:
-                # ★人狼OFF：チーム全員を「逃走者」にする
+                # 人狼OFF：チーム全員を「逃走者」にする
                 for p in team_members:
                     p["role"] = "逃走者"
                     p["team"] = f"{team_names[i]}チーム"
             else:
-                # ★人狼ON：先頭の1人を「人狼」、残りを「逃走者」にする
+                # 人狼ON：先頭の1人を「人狼」、残りを「逃走者」にする
                 werewolf = team_members.pop(0)
                 werewolf["role"] = "人狼"
                 werewolf["team"] = f"{team_names[i]}チーム"
@@ -69,7 +100,6 @@ def start_game(
                     p["team"] = f"{team_names[i]}チーム"
 
     return RedirectResponse(url="/admin", status_code=303)
-
 
 
 # 🗑️ 参加者全員リセット処理
