@@ -142,3 +142,114 @@ async def send_line_reply(reply_token: str, text: str):
     payload = {"replyToken": reply_token, "messages": [{"type": "text", "text": text}]}
     async with httpx.AsyncClient() as client:
         await client.post(url, json=payload, headers=headers)
+import os
+import requests
+from fastapi import FastAPI, Form, Request
+from fastapi.responses import RedirectResponse
+from fastapi.templating import Jinja2Templates
+
+app = FastAPI()
+templates = Jinja2Templates(directory="templates")
+
+# LINE Botアクセストークン
+LINE_CHANNEL_ACCESS_TOKEN = os.getenv("LINE_CHANNEL_ACCESS_TOKEN", "YOUR_LINE_ACCESS_TOKEN")
+
+# --------------------------------------------------
+# グローバル状態管理
+# --------------------------------------------------
+view_mode = "conductor"  # "conductor" (車掌モード) または "driver" (運転士モード)
+players = []             # 参加者データリスト
+
+# 案内メッセージテンプレート（複数管理）
+announcements = [
+    {"id": 1, "title": "集合案内", "text": "【連絡】本日の集合場所および注意事項です..."},
+    {"id": 2, "title": "ゲーム開始", "text": "🚨 これより逃走中ゲームを開始します！"},
+]
+
+# ゲーム日程
+game_schedule = {
+    "date": "2026-10-15",
+    "start_time": "10:00",
+    "end_time": "16:00",
+    "location": "都営地下鉄全線"
+}
+
+# --------------------------------------------------
+# 管理画面表示 (GET)
+# --------------------------------------------------
+@app.get("/admin")
+def get_admin(request: Request):
+    # 運転士モードの場合は「人狼」の役職を「逃走者」に偽装してテンプレートへ渡す
+    display_players = []
+    for p in players:
+        p_copy = dict(p)
+        if view_mode == "driver" and p_copy.get("role") == "人狼":
+            p_copy["role"] = "逃走者"
+        display_players.append(p_copy)
+
+    return templates.TemplateResponse("admin.html", {
+        "request": request,
+        "players": display_players,
+        "view_mode": view_mode,
+        "announcements": announcements,
+        "game_schedule": game_schedule
+    })
+
+# --------------------------------------------------
+# 🎛️ 機能1: 車掌モード / 運転士モード 切り替え (POST)
+# --------------------------------------------------
+@app.post("/admin/set_mode")
+def set_mode(mode: str = Form(...)):
+    global view_mode
+    view_mode = mode
+    return RedirectResponse(url="/admin", status_code=303)
+
+# --------------------------------------------------
+# 📢 機能2: メニュー案内テンプレート管理 & LINE送信 (POST)
+# --------------------------------------------------
+@app.post("/admin/add_announcement")
+def add_announcement(title: str = Form(...), text: str = Form(...)):
+    global announcements
+    new_id = max([a["id"] for a in announcements], default=0) + 1
+    announcements.append({"id": new_id, "title": title, "text": text})
+    return RedirectResponse(url="/admin", status_code=303)
+
+@app.post("/admin/delete_announcement/{item_id}")
+def delete_announcement(item_id: int):
+    global announcements
+    announcements = [a for a in announcements if a["id"] != item_id]
+    return RedirectResponse(url="/admin", status_code=303)
+
+@app.post("/admin/send_announcement/{item_id}")
+def send_announcement(item_id: int):
+    target = next((a for a in announcements if a["id"] == item_id), None)
+    if target and LINE_CHANNEL_ACCESS_TOKEN != "YOUR_LINE_ACCESS_TOKEN":
+        url = "https://api.line.me/v2/bot/message/broadcast"
+        headers = {
+            "Content-Type": "application/json",
+            "Authorization": f"Bearer {LINE_CHANNEL_ACCESS_TOKEN}"
+        }
+        payload = {
+            "messages": [{"type": "text", "text": target["text"]}]
+        }
+        requests.post(url, json=payload, headers=headers)
+    return RedirectResponse(url="/admin", status_code=303)
+
+# --------------------------------------------------
+# 📅 機能3: ゲーム日程の更新 (POST)
+# --------------------------------------------------
+@app.post("/admin/update_schedule")
+def update_schedule(
+    date: str = Form(...),
+    start_time: str = Form(...),
+    end_time: str = Form(...),
+    location: str = Form(...)
+):
+    global game_schedule
+    game_schedule = {
+        "date": date,
+        "start_time": start_time,
+        "end_time": end_time,
+        "location": location
+    }
+    return RedirectResponse(url="/admin", status_code=303)
