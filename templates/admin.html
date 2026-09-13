@@ -1,0 +1,461 @@
+html
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>人狼逃走中 CONTROL CENTER</title>
+  <style>
+    /* ===== Cyberpunk Dark UI (Upgraded) ===== */
+    :root{
+      --bg0:#04060a;
+      --bg1:#070b14;
+      --bg2:#0b1120;
+
+      --panel: rgba(16,21,36,0.78);
+      --panel2: rgba(255,255,255,0.03);
+      --border: rgba(255,255,255, 0.10);
+      --border2: rgba(255,255,255, 0.16);
+
+      --text:#e9eefc;
+      --muted:#a8b3d6;
+
+      --neon-red:#ff2a4f;
+      --neon-blue:#2dd6ff;
+      --neon-gray:#7b86b3;
+      --neon-warning:#ffaa00;
+      --neon-green:#22c55e;
+
+      --mono: ui-monospace, SFMono-Regular, Consolas, monospace;
+      --sans: ui-sans-serif, system-ui, -apple-system, sans-serif;
+
+      --radius: 18px;
+      --shadow: 0 18px 70px rgba(0,0,0,.55);
+    }
+
+    * { box-sizing: border-box; }
+    body{
+      margin:0;
+      font-family: var(--sans);
+      color: var(--text);
+      background:
+        radial-gradient(900px 420px at 15% 10%, rgba(45,214,255,.16), transparent 60%),
+        radial-gradient(800px 380px at 90% 25%, rgba(255,42,79,.14), transparent 55%),
+        radial-gradient(900px 420px at 50% 95%, rgba(34,197,94,.10), transparent 60%),
+        linear-gradient(180deg, var(--bg0), var(--bg1) 60%, var(--bg2));
+      min-height: 100vh;
+    }
+
+    /* ===== Ambient scanlines / grid ===== */
+    body::before{
+      content:"";
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      background:
+        repeating-linear-gradient(
+          to bottom,
+          rgba(255,255,255,.035) 0px,
+          rgba(255,255,255,.035) 1px,
+          transparent 2px,
+          transparent 6px
+        );
+      opacity: .25;
+      mix-blend-mode: overlay;
+    }
+    body::after{
+      content:"";
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      background:
+        linear-gradient(to right, rgba(255,255,255,.04) 1px, transparent 1px),
+        linear-gradient(to bottom, rgba(255,255,255,.04) 1px, transparent 1px);
+      background-size: 60px 60px;
+      opacity: .08;
+      transform: translateZ(0);
+    }
+
+    .wrap{
+      max-width: 1180px;
+      margin: 0 auto;
+      padding: 26px 16px 44px;
+      position: relative;
+    }
+
+    /* ===== Title ===== */
+    .title{
+      display:flex;
+      align-items:baseline;
+      gap: 10px;
+      margin: 0 0 18px;
+      font-size: 26px;
+      font-weight: 950;
+      letter-spacing: .2px;
+      text-shadow: 0 0 22px rgba(45,214,255,.18);
+    }
+    .title span{
+      font-family: var(--mono);
+      font-size: 14px;
+      color: var(--neon-blue);
+      border: 1px solid rgba(45,214,255,.35);
+      background: rgba(45,214,255,.06);
+      padding: 6px 10px;
+      border-radius: 999px;
+    }
+
+    /* ===== Layout ===== */
+    .layout{
+      display:grid;
+      grid-template-columns: 1fr 1.5fr;
+      gap: 16px;
+      align-items:start;
+    }
+    @media (max-width: 980px){
+      .layout{ grid-template-columns: 1fr; }
+    }
+
+    /* ===== Panel ===== */
+    .panel{
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 16px;
+      box-shadow: var(--shadow);
+      position: relative;
+      overflow:hidden;
+    }
+    .panel::before{
+      content:"";
+      position:absolute;
+      inset:-2px;
+      background: radial-gradient(800px 240px at 10% 0%, rgba(45,214,255,.14), transparent 55%),
+                  radial-gradient(700px 220px at 90% 10%, rgba(255,42,79,.12), transparent 55%);
+      opacity: .9;
+      z-index:0;
+      pointer-events:none;
+    }
+    .panel > *{ position:relative; z-index:1; }
+
+    /* ===== Section title ===== */
+    .section-title{
+      font-family: var(--mono);
+      color: var(--muted);
+      font-size: 12px;
+      margin: 2px 0 12px;
+      letter-spacing: .6px;
+      text-transform: uppercase;
+      display:flex;
+      align-items:center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+    .section-title .right{
+      color: rgba(233,238,252,.85);
+      font-weight: 800;
+      letter-spacing: 0;
+      text-transform:none;
+      font-size: 12px;
+      font-family: var(--sans);
+      opacity:.95;
+    }
+
+    /* ===== Forms ===== */
+    .form-group{ margin-bottom: 12px; }
+    .form-group label{
+      display:flex;
+      align-items:center;
+      justify-content: space-between;
+      gap: 12px;
+      font-size: 12px;
+      margin-bottom: 6px;
+      color: var(--muted);
+      font-weight: 800;
+    }
+    .help{
+      font-family: var(--mono);
+      font-size: 11px;
+      color: rgba(168,179,214,.95);
+      opacity:.95;
+      border: 1px solid rgba(255,255,255,.10);
+      background: rgba(0,0,0,.18);
+      padding: 2px 8px;
+      border-radius: 999px;
+      white-space: nowrap;
+    }
+
+    .form-group input{
+      width:100%;
+      padding: 11px 12px;
+      background: rgba(0,0,0,0.28);
+      border: 1px solid var(--border2);
+      color: white;
+      border-radius: 12px;
+      outline: none;
+      transition: .2s ease;
+      font-size: 14px;
+    }
+    .form-group input:focus{
+      border-color: rgba(45,214,255,.45);
+      box-shadow: 0 0 0 4px rgba(45,214,255,.14);
+      background: rgba(0,0,0,0.36);
+    }
+
+    /* ===== Buttons ===== */
+    .actions{
+      display:grid;
+      gap: 10px;
+      margin-top: 14px;
+    }
+    .btn{
+      appearance:none;
+      border: 1px solid var(--border);
+      background: rgba(255,255,255,0.04);
+      color: white;
+      border-radius: 14px;
+      padding: 12px 14px;
+      font-weight: 900;
+      cursor:pointer;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      gap: 10px;
+      transition: transform .08s ease, filter .15s ease, border-color .15s ease;
+      user-select:none;
+      position: relative;
+      overflow:hidden;
+    }
+    .btn::after{
+      content:"";
+      position:absolute;
+      inset:-2px;
+      background: linear-gradient(120deg, transparent 25%, rgba(255,255,255,.26), transparent 55%);
+      transform: translateX(-140%);
+      transition: transform .55s ease;
+      pointer-events:none;
+      opacity:.55;
+    }
+    .btn:hover::after{ transform: translateX(140%); }
+    .btn:hover{ filter: brightness(1.06); border-color: rgba(255,255,255,.22); }
+    .btn:active{ transform: scale(.99); }
+
+    .btn-start{
+      border-color: rgba(45,214,255,0.40);
+      color: var(--neon-blue);
+      background: linear-gradient(135deg, rgba(45,214,255,.14), rgba(79,70,229,.10));
+    }
+    .btn-reset{
+      border-color: rgba(255,42,79,0.42);
+      color: var(--neon-red);
+      background: linear-gradient(135deg, rgba(255,42,79,.12), rgba(0,0,0,.10));
+    }
+
+    /* ===== Roster cards ===== */
+    .cards{
+      display:grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+    }
+    @media (max-width: 720px){
+      .cards{ grid-template-columns: 1fr; }
+    }
+
+    .card{
+      border-radius: 16px;
+      border: 1px solid rgba(255,255,255,0.11);
+      background: linear-gradient(180deg, rgba(255,255,255,0.04), rgba(255,255,255,0.02));
+      padding: 12px;
+      position: relative;
+      overflow:hidden;
+    }
+    .card::before{
+      content:"";
+      position:absolute;
+      inset:-40px -40px auto auto;
+      width: 120px;
+      height: 120px;
+      background: radial-gradient(circle at center, rgba(45,214,255,.20), transparent 60%);
+      opacity: .6;
+      pointer-events:none;
+      transform: rotate(20deg);
+    }
+
+    .card-top{
+      display:flex;
+      align-items:flex-start;
+      justify-content: space-between;
+      gap: 10px;
+      margin-bottom: 8px;
+    }
+
+    .player-name{
+      font-weight: 950;
+      letter-spacing: .2px;
+      font-size: 14px;
+      line-height: 1.2;
+    }
+
+    .badge{
+      padding: 5px 9px;
+      border-radius: 999px;
+      font-size: 11px;
+      font-family: var(--mono);
+      border: 1px solid rgba(255,255,255,0.14);
+      white-space: nowrap;
+      height: fit-content;
+      background: rgba(0,0,0,.16);
+    }
+    .badge-oni{
+      color: var(--neon-red);
+      border-color: rgba(255,42,79,.45);
+      background: rgba(255,42,79,.10);
+      box-shadow: 0 0 20px rgba(255,42,79,.12);
+    }
+    .badge-wolf{
+      color: var(--neon-warning);
+      border-color: rgba(255,170,0,.45);
+      background: rgba(255,170,0,.10);
+      box-shadow: 0 0 20px rgba(255,170,0,.10);
+    }
+    .badge-evader{
+      color: var(--neon-blue);
+      border-color: rgba(45,214,255,.45);
+      background: rgba(45,214,255,.10);
+      box-shadow: 0 0 20px rgba(45,214,255,.10);
+    }
+    .badge-unassigned{
+      color: var(--neon-gray);
+      border-color: rgba(123,134,179,.35);
+      background: rgba(123,134,179,.08);
+    }
+
+    .team-row{
+      display:flex;
+      align-items:center;
+      justify-content: space-between;
+      gap: 10px;
+      margin-top: 6px;
+    }
+    .team-tag{
+      font-size: 11px;
+      color: var(--muted);
+      background: rgba(0,0,0,0.18);
+      padding: 4px 8px;
+      border-radius: 10px;
+      border: 1px solid rgba(255,255,255,.09);
+      font-family: var(--mono);
+    }
+    .status-dot{
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      border: 1px solid rgba(255,255,255,.18);
+      background: rgba(255,255,255,.05);
+      box-shadow: 0 0 0 3px rgba(255,255,255,.04);
+    }
+
+    /* Empty state */
+    .empty{
+      padding: 18px 12px;
+      border-radius: 14px;
+      border: 1px dashed rgba(255,255,255,.18);
+      background: rgba(255,255,255,.02);
+      color: var(--muted);
+      font-size: 14px;
+      text-align:center;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="wrap">
+    <h1 class="title">
+      人狼逃走中 <span>CONTROL CENTER</span>
+    </h1>
+
+    <div class="layout">
+      <!-- 左側：コントロールパネル -->
+      <section class="panel">
+        <p class="section-title">
+          <span>⚙️ Game Settings</span>
+          <span class="right">Admin / Role Distribution</span>
+        </p>
+
+        <form action="/admin/start" method="post">
+          <div class="form-group">
+            <label>
+              <span>👹 鬼の人数</span>
+              <span class="help">MIN 1</span>
+            </label>
+            <input type="number" name="oni_count" value="2" min="1" required />
+          </div>
+
+          <div class="form-group">
+            <label>
+              <span>👥 チーム人数構成 (カンマ区切り)</span>
+              <span class="help">例: 3,3 or 4,4,4</span>
+            </label>
+            <input type="text" name="camp_sizes" value="3,3" placeholder="例: 3,3 や 4,4,4" required />
+          </div>
+
+          <div class="actions">
+            <button class="btn btn-start" type="submit">
+              🚀 ゲーム開始（役職自動割り振り）
+            </button>
+          </div>
+        </form>
+
+        <div style="height: 10px;"></div>
+
+        <form action="/admin/reset" method="post">
+          <button
+            class="btn btn-reset"
+            type="submit"
+            onclick="return confirm('全員をリストから削除します。よろしいですか？');"
+          >
+            ⟲ 参加者リストを全リセット（危険）
+          </button>
+        </form>
+      </section>
+
+      <!-- 右側：プレイヤーリスト -->
+      <section class="panel">
+        <p class="section-title">
+          <span>🧾 Participant Roster</span>
+          <span class="right">現在 {{ players | length }} 名</span>
+        </p>
+
+        <div class="cards">
+          {% if players %}
+            {% for p in players %}
+              <div class="card">
+                <div class="card-top">
+                  <span class="player-name">{{ p.name }}</span>
+
+                  <span class="badge
+                    {% if p.role == '鬼' %}badge-oni
+                    {% elif p.role == '人狼' %}badge-wolf
+                    {% elif p.role == '逃走者' %}badge-evader
+                    {% else %}badge-unassigned{% endif %}">
+                    {{ p.role }}
+                  </span>
+                </div>
+
+                <div class="team-row">
+                  <span class="team-tag">TEAM: {{ p.team }}</span>
+                  <span class="status-dot" title="Status"></span>
+                </div>
+              </div>
+            {% endfor %}
+          {% else %}
+            <div class="empty">
+              参加者はまだいません。<br/>
+              ✅ 左の設���から開始してください
+            </div>
+          {% endif %}
+        </div>
+      </section>
+    </div>
+  </div>
+</body>
+</html>
